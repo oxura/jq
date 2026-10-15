@@ -3918,7 +3918,7 @@ Values in jq are always immutable\. Internally, assignment works by using a redu
 Most users will want to use modification assignment operators, such as \fB|=\fR or \fB+=\fR, rather than \fB=\fR\.
 .
 .P
-Note that the LHS of assignment operators refers to a value in \fB\.\fR\. Thus \fB$var\.foo = 1\fR won\'t work as expected (\fB$var\.foo\fR is not a valid or useful path expression in \fB\.\fR); use \fB$var | \.foo = 1\fR instead\.
+Note that the LHS of assignment operators refers to a value in \fB\.\fR\. A direct variable target such as \fB$var\.foo = 1\fR is rejected at compile time (\fB$var\.foo\fR is not a path expression in \fB\.\fR); use \fB$var | \.foo = 1\fR instead\. Variables may still be used to compute keys, slice bounds, and conditions within a path expression\.
 .
 .P
 Note too that \fB\.a,\.b=0\fR does not set \fB\.a\fR and \fB\.b\fR, but \fB(\.a,\.b)=0\fR sets both\.
@@ -3930,7 +3930,7 @@ This is the "update" operator \fB|=\fR\. It takes a filter on the right\-hand si
 The left\-hand side can be any general path expression; see \fBpath()\fR\.
 .
 .P
-Note that the left\-hand side of \fB|=\fR refers to a value in \fB\.\fR\. Thus \fB$var\.foo |= \. + 1\fR won\'t work as expected (\fB$var\.foo\fR is not a valid or useful path expression in \fB\.\fR); use \fB$var | \.foo |= \. + 1\fR instead\.
+Note that the left\-hand side of \fB|=\fR refers to a value in \fB\.\fR\. Thus \fB$var\.foo |= \. + 1\fR is rejected at compile time; use \fB$var | \.foo |= \. + 1\fR instead\.
 .
 .P
 If the right\-hand side outputs no values (i\.e\., \fBempty\fR), then the left\-hand side path will be deleted, as with \fBdel(path)\fR\.
