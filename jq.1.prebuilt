@@ -1880,8 +1880,8 @@ jq \'inside({"foo": 12, "bar":[1,2,{"barp":12, "blip":13}]})\'
 .
 .IP "" 0
 .
-.SS "startswith(str)"
-Outputs \fBtrue\fR if \. starts with the given string argument\.
+.SS "startswith(value)"
+Outputs \fBtrue\fR if \. starts with the given string or array\. Both inputs must be strings, or both must be arrays\. Arrays match element by element using jq equality, so \fB[1,2,3] | startswith([1,2])\fR is \fBtrue\fR\. An empty array is a prefix of every array\.
 .
 .IP "" 4
 .
@@ -1895,8 +1895,8 @@ jq \'[\.[]|startswith("foo")]\'
 .
 .IP "" 0
 .
-.SS "endswith(str)"
-Outputs \fBtrue\fR if \. ends with the given string argument\.
+.SS "endswith(value)"
+Outputs \fBtrue\fR if \. ends with the given string or array\. Both inputs must be strings, or both must be arrays\. Arrays match element by element using jq equality, so \fB[1,2,3] | endswith([2,3])\fR is \fBtrue\fR\. An empty array is a suffix of every array\.
 .
 .IP "" 4
 .
