@@ -87,6 +87,32 @@ EOF
 printf '1\0362 3\n[0,1\036[4,5]true"ab"{"c":4\036{}{"d":5,"e":6"false\n\036null'|$VALGRIND $Q $JQ -ces --seq '. == [2,3,[4,5],true,"ab",{},null]' > /dev/null 2> $d/out
 cmp $d/out $d/expected
 
+# An RS must diagnose unfinished strings (including empty ones) and containers,
+# even when the previous byte was whitespace, then resume at the next text.
+for opts in '' '--stream'; do
+  for text in '"' '" ' '"\' '[' '[ ' '{"a": '; do
+    printf '\036%s\036true\n' "$text" |
+      $VALGRIND $Q $JQ -cs --seq $opts . > $d/out 2> $d/err
+    if [ -n "$opts" ]; then
+      printf '\036[[[],true]]\n' > $d/expected
+    else
+      printf '\036[true]\n' > $d/expected
+    fi
+    cmp $d/out $d/expected
+    grep 'Truncated value' $d/err > /dev/null
+    test "$(wc -l < $d/err)" -eq 1
+  done
+  printf '\036""\036[]\036{}\036true\n' |
+    $VALGRIND $Q $JQ -cs --seq $opts . > $d/out 2> $d/err
+  test ! -s $d/err
+  if [ -n "$opts" ]; then
+    printf '\036[[[],""],[[],[]],[[],{}],[[],true]]\n' > $d/expected
+  else
+    printf '\036["",[],{},true]\n' > $d/expected
+  fi
+  cmp $d/out $d/expected
+done
+
 # A syntax error skips the rest of the text, up to the next RS
 cat > $d/expected <<EOF
 jq: ignoring parse error: Invalid numeric literal at line 1, column 8 (need RS to resync)

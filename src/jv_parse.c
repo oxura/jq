@@ -621,12 +621,15 @@ static int stream_check_done(struct jv_parser* p, jv* out) {
 }
 
 static int seq_check_truncation(struct jv_parser* p) {
-  return (!p->last_ch_was_ws && (p->stackpos > 0 || p->tokenpos > 0 || jv_get_kind(p->next) == JV_KIND_NUMBER));
+  return (p->st != JV_PARSER_NORMAL || p->stackpos > 0 ||
+          (!p->last_ch_was_ws &&
+           (p->tokenpos > 0 || jv_get_kind(p->next) == JV_KIND_NUMBER)));
 }
 
 static int stream_seq_check_truncation(struct jv_parser* p) {
   jv_kind k = jv_get_kind(p->next);
-  return (p->stacklen > 0 || k == JV_KIND_NUMBER || k == JV_KIND_TRUE || k == JV_KIND_FALSE || k == JV_KIND_NULL);
+  return (p->st != JV_PARSER_NORMAL || p->stacklen > 0 ||
+          k == JV_KIND_NUMBER || k == JV_KIND_TRUE || k == JV_KIND_FALSE || k == JV_KIND_NULL);
 }
 
 static int parse_is_top_num(struct jv_parser* p) {
