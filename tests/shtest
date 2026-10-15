@@ -459,6 +459,30 @@ if ! grep -q "circular import" $d/out; then
     exit 1
 fi
 
+# Nested includes export their symbols, including through namespaced imports,
+# while imported helpers remain private. Shared dependencies keep binding order.
+printf 'def inherited: "inner"; def clash: "inner";\n' > "$d/inner.jq"
+printf 'def hidden: "private";\n' > "$d/private.jq"
+printf 'include "inner"; import "private" as p; def own: p::hidden; def clash: "outer";\n' > "$d/outer.jq"
+printf 'include "missing" {"optional":true}; include "outer";\n' > "$d/middle.jq"
+$VALGRIND $Q $JQ -L "$d" -ne \
+  'include "middle"; [inherited, own, clash] == ["inner","private","outer"]'
+$VALGRIND $Q $JQ -L "$d" -ne \
+  'import "middle" as m; [m::inherited, m::own, m::clash] == ["inner","private","outer"]'
+$VALGRIND $Q $JQ -L "$d" -ne \
+  'import "inner" as i; include "middle"; [i::inherited, inherited] == ["inner","inner"]'
+for expr in 'hidden' 'p::hidden'; do
+  ret=0
+  $VALGRIND $Q $JQ -L "$d" -n "include \"middle\"; $expr" > "$d/out" 2> "$d/err" || ret=$?
+  test "$ret" -eq 3
+  test ! -s "$d/out"
+done
+printf 'include "inner"; def clash: "left";\n' > "$d/left.jq"
+printf 'include "inner"; def clash: "right";\n' > "$d/right.jq"
+printf 'include "left"; include "right";\n' > "$d/diamond.jq"
+$VALGRIND $Q $JQ -L "$d" -ne \
+  'include "diamond"; [inherited, clash] == ["inner","right"]'
+
 ## Halt
 
 if ! $VALGRIND $Q $JQ -n halt; then
