@@ -1013,4 +1013,10 @@ if $JQ -nf "$d/nul_modulemeta.jq" >/dev/null 2>/dev/null; then
   exit 1
 fi
 
+# Check interrupted color output on a real terminal when Python's pty module
+# is available. Native Windows has a separate console implementation.
+if ! $msys && ! $mingw && command -v python3 > /dev/null 2>&1; then
+  python3 "$JQTESTDIR/terminal.test.py" $VALGRIND $Q $JQ
+fi
+
 exit 0

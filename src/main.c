@@ -9,6 +9,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#ifndef WIN32
+#include <signal.h>
+#endif
 
 #ifdef WIN32
 #include <windows.h>
@@ -32,6 +35,29 @@ extern void jv_tsd_dtoa_ctx_init();
 
 #if defined(HAVE_ISATTY) || defined(HAVE__ISATTY)
 #define USE_ISATTY
+#endif
+
+#ifndef WIN32
+static void reset_terminal_color(int signo) {
+  // Only async-signal-safe functions may run here. SA_RESETHAND restores the
+  // default disposition before the signal is raised again.
+  (void)write(STDOUT_FILENO, "\033[0m", 4);
+  raise(signo);
+}
+
+static void install_terminal_color_handlers(void) {
+  const int signals[] = {SIGINT, SIGTERM, SIGHUP};
+  struct sigaction action, previous;
+  memset(&action, 0, sizeof(action));
+  action.sa_handler = reset_terminal_color;
+  action.sa_flags = SA_RESETHAND;
+  sigfillset(&action.sa_mask);
+  for (size_t i = 0; i < sizeof(signals) / sizeof(signals[0]); i++) {
+    if (sigaction(signals[i], NULL, &previous) == 0 &&
+        previous.sa_handler == SIG_DFL)
+      sigaction(signals[i], &action, NULL);
+  }
+}
 #endif
 
 #include "jv.h"
@@ -568,6 +594,11 @@ int main(int argc, char* argv[]) {
   if (options & ASCII_OUTPUT) dumpopts |= JV_PRINT_ASCII;
   if (options & COLOR_OUTPUT) dumpopts |= JV_PRINT_COLOR;
   if (options & NO_COLOR_OUTPUT) dumpopts &= ~JV_PRINT_COLOR;
+#ifndef WIN32
+  if ((dumpopts & (JV_PRINT_ISATTY | JV_PRINT_COLOR)) ==
+      (JV_PRINT_ISATTY | JV_PRINT_COLOR))
+    install_terminal_color_handlers();
+#endif
 
   if (!jq_set_colors(getenv("JQ_COLORS")))
       fprintf(stderr, "Failed to set $JQ_COLORS\n");
