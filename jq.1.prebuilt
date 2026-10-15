@@ -115,7 +115,7 @@ Output the fields of each object with the keys in sorted order\.
 \fB\-\-color\-output\fR / \fB\-C\fR and \fB\-\-monochrome\-output\fR / \fB\-M\fR:
 .
 .IP
-By default, jq outputs colored JSON if writing to a terminal\. You can force it to produce color even if writing to a pipe or a file using \fB\-C\fR, and disable color with \fB\-M\fR\. When the \fBNO_COLOR\fR environment variable is not empty, jq disables colored output by default, but you can enable it by \fB\-C\fR\.
+By default, jq outputs colored JSON if writing to a terminal\. You can force it to produce color even if writing to a pipe or a file using \fB\-C\fR, and disable color with \fB\-M\fR\. When the \fBNO_COLOR\fR environment variable is not empty, jq disables colored output by default, but you can enable it by \fB\-C\fR\. On Unix terminals, jq makes a best\-effort, nonblocking attempt to reset the color before terminating on \fBSIGINT\fR, \fBSIGTERM\fR, or \fBSIGHUP\fR\. The reset may be omitted if the terminal\'s output buffer is full or a separate reset descriptor for the output terminal is unavailable\. Inherited ignored signals remain ignored\.
 .
 .IP
 Colors can be configured with the \fBJQ_COLORS\fR environment variable (see below)\.
