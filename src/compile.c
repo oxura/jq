@@ -103,6 +103,19 @@ int block_is_single(block b) {
   return b.first && b.first == b.last;
 }
 
+int block_has_variable_path(block b) {
+  int subexp_nest = 0;
+  for (inst *i = b.first; i; i = i->next) {
+    if (i->op == SUBEXP_BEGIN)
+      subexp_nest++;
+    else if (i->op == SUBEXP_END)
+      subexp_nest--;
+    else if (i->op == LOADV && subexp_nest == 0)
+      return 1;
+  }
+  return 0;
+}
+
 static inst* block_take(block* b) {
   if (b->first == 0) return 0;
   inst* i = b->first;

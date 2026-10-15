@@ -349,6 +349,8 @@ Expr "//" Expr {
   $$ = gen_definedor($1, $3);
 } |
 Expr '=' Expr {
+  if (block_has_variable_path($1))
+    FAIL(@1, "Variables cannot be assignment targets; pipe the variable into the assignment instead");
   $$ = gen_call("_assign", BLOCK(gen_lambda($1), gen_lambda($3)));
 } |
 Expr "or" Expr {
@@ -358,27 +360,37 @@ Expr "and" Expr {
   $$ = gen_and($1, $3);
 } |
 Expr "//=" Expr {
+  if (block_has_variable_path($1))
+    FAIL(@1, "Variables cannot be assignment targets; pipe the variable into the assignment instead");
   $$ = gen_definedor_assign($1, $3);
 } |
 Expr "|=" Expr {
+  if (block_has_variable_path($1))
+    FAIL(@1, "Variables cannot be assignment targets; pipe the variable into the assignment instead");
   $$ = gen_call("_modify", BLOCK(gen_lambda($1), gen_lambda($3)));
 } |
 Expr '+' Expr {
   $$ = gen_binop($1, $3, '+');
 } |
 Expr "+=" Expr {
+  if (block_has_variable_path($1))
+    FAIL(@1, "Variables cannot be assignment targets; pipe the variable into the assignment instead");
   $$ = gen_update($1, $3, '+');
 } |
 Expr '-' Expr {
   $$ = gen_binop($1, $3, '-');
 } |
 Expr "-=" Expr {
+  if (block_has_variable_path($1))
+    FAIL(@1, "Variables cannot be assignment targets; pipe the variable into the assignment instead");
   $$ = gen_update($1, $3, '-');
 } |
 Expr '*' Expr {
   $$ = gen_binop($1, $3, '*');
 } |
 Expr "*=" Expr {
+  if (block_has_variable_path($1))
+    FAIL(@1, "Variables cannot be assignment targets; pipe the variable into the assignment instead");
   $$ = gen_update($1, $3, '*');
 } |
 Expr '/' Expr {
@@ -388,9 +400,13 @@ Expr '%' Expr {
   $$ = gen_binop($1, $3, '%');
 } |
 Expr "/=" Expr {
+  if (block_has_variable_path($1))
+    FAIL(@1, "Variables cannot be assignment targets; pipe the variable into the assignment instead");
   $$ = gen_update($1, $3, '/');
 } |
 Expr SETMOD Expr {
+  if (block_has_variable_path($1))
+    FAIL(@1, "Variables cannot be assignment targets; pipe the variable into the assignment instead");
   $$ = gen_update($1, $3, '%');
 } |
 Expr "==" Expr {

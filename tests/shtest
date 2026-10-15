@@ -825,6 +825,21 @@ jq: 1 compile error
 EOF
 diff $d/out $d/expected
 
+# Reject direct variable targets at compile time, for every assignment form,
+# including targets in dead code. Variables in keys and predicates are valid.
+for lhs in '$x.a' '($x | .a)' '(.a, $x.b)' '$x[0]'; do
+  for op in '=' '|=' '//=' '+=' '-=' '*=' '/=' '%='; do
+    ret=0
+    $VALGRIND $Q $JQ -n "{} as \$x | empty | $lhs $op 1" > "$d/out" 2> "$d/err" || ret=$?
+    test "$ret" -eq 3
+    test ! -s "$d/out"
+  done
+done
+$VALGRIND $Q $JQ -ne '{} as $x | ($x | .a = 1) == {"a":1}'
+$VALGRIND $Q $JQ -ne '"a" as $key | ({} | .[$key] = 1) == {"a":1}'
+$VALGRIND $Q $JQ -ne 'true as $flag | ({} | (if $flag then .a else .b end) = 1) == {"a":1}'
+$VALGRIND $Q $JQ -ne '1 as $start | ([0,1,2] | .[$start:2] = [9]) == [0,9,2]'
+
 # Comments!
 if ! x=$($JQ -n '123 # comment') || [ "$x" != 123 ]; then
   echo 'comment did not work'

@@ -3540,9 +3540,10 @@ sections:
       such as `|=` or `+=`, rather than `=`.
 
       Note that the LHS of assignment operators refers to a value in
-      `.`.  Thus `$var.foo = 1` won't work as expected (`$var.foo` is
-      not a valid or useful path expression in `.`); use `$var | .foo =
-      1` instead.
+      `.`.  A direct variable target such as `$var.foo = 1` is rejected
+      at compile time (`$var.foo` is not a path expression in `.`);
+      use `$var | .foo = 1` instead. Variables may still be used to
+      compute keys, slice bounds, and conditions within a path expression.
 
       Note too that `.a,.b=0` does not set `.a` and `.b`, but
       `(.a,.b)=0` sets both.
@@ -3560,9 +3561,8 @@ sections:
           The left-hand side can be any general path expression; see `path()`.
 
           Note that the left-hand side of `|=` refers to a value in `.`.
-          Thus `$var.foo |= . + 1` won't work as expected (`$var.foo` is
-          not a valid or useful path expression in `.`); use `$var |
-          .foo |= . + 1` instead.
+          Thus `$var.foo |= . + 1` is rejected at compile time; use
+          `$var | .foo |= . + 1` instead.
 
           If the right-hand side outputs no values (i.e., `empty`), then
           the left-hand side path will be deleted, as with `del(path)`.
