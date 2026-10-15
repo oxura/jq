@@ -1741,20 +1741,28 @@ sections:
             input: '{"foo": 12, "bar": [{"barp": 15}]}'
             output: ['false']
 
-      - title: "`startswith(str)`"
+      - title: "`startswith(value)`"
         body: |
 
-          Outputs `true` if . starts with the given string argument.
+          Outputs `true` if . starts with the given string or array.
+          Both inputs must be strings, or both must be arrays. Arrays
+          match element by element using jq equality, so
+          `[1,2,3] | startswith([1,2])` is `true`. An empty array is a
+          prefix of every array.
 
         examples:
           - program: '[.[]|startswith("foo")]'
             input: '["fo", "foo", "barfoo", "foobar", "barfoob"]'
             output: ['[false, true, false, true, false]']
 
-      - title: "`endswith(str)`"
+      - title: "`endswith(value)`"
         body: |
 
-          Outputs `true` if . ends with the given string argument.
+          Outputs `true` if . ends with the given string or array.
+          Both inputs must be strings, or both must be arrays. Arrays
+          match element by element using jq equality, so
+          `[1,2,3] | endswith([2,3])` is `true`. An empty array is a
+          suffix of every array.
 
         examples:
           - program: '[.[]|endswith("foo")]'

@@ -252,9 +252,33 @@ static jv f_negate(jq_state *jq, jv input) {
   return ret;
 }
 
+static jv array_matches_edge(jv a, jv b, int suffix) {
+  int alen = jv_array_length(jv_copy(a));
+  int blen = jv_array_length(jv_copy(b));
+  if (alen == blen)
+    return binop_equal(a, b);
+  int equal = blen <= alen;
+  if (equal) {
+    int offset = suffix ? alen - blen : 0;
+    for (int i = 0; i < blen; i++) {
+      equal = jv_equal(jv_array_get(jv_copy(a), offset + i),
+                       jv_array_get(jv_copy(b), i));
+      if (equal <= 0)
+        break;
+    }
+  }
+  jv_free(a);
+  jv_free(b);
+  if (equal < 0)
+    return jv_invalid_with_msg(jv_string("Equality check too deep"));
+  return jv_bool(equal);
+}
+
 static jv f_startswith(jq_state *jq, jv a, jv b) {
+  if (jv_get_kind(a) == JV_KIND_ARRAY && jv_get_kind(b) == JV_KIND_ARRAY)
+    return array_matches_edge(a, b, 0);
   if (jv_get_kind(a) != JV_KIND_STRING || jv_get_kind(b) != JV_KIND_STRING)
-    return ret_error2(a, b, jv_string("startswith() requires string inputs"));
+    return ret_error2(a, b, jv_string("startswith() requires two strings or two arrays"));
   int alen = jv_string_length_bytes(jv_copy(a));
   int blen = jv_string_length_bytes(jv_copy(b));
   jv ret;
@@ -269,8 +293,10 @@ static jv f_startswith(jq_state *jq, jv a, jv b) {
 }
 
 static jv f_endswith(jq_state *jq, jv a, jv b) {
+  if (jv_get_kind(a) == JV_KIND_ARRAY && jv_get_kind(b) == JV_KIND_ARRAY)
+    return array_matches_edge(a, b, 1);
   if (jv_get_kind(a) != JV_KIND_STRING || jv_get_kind(b) != JV_KIND_STRING)
-    return ret_error2(a, b, jv_string("endswith() requires string inputs"));
+    return ret_error2(a, b, jv_string("endswith() requires two strings or two arrays"));
   const char *astr = jv_string_value(a);
   const char *bstr = jv_string_value(b);
   size_t alen = jv_string_length_bytes(jv_copy(a));
