@@ -11,6 +11,9 @@
 #include <unistd.h>
 #ifndef WIN32
 #include <signal.h>
+#include <fcntl.h>
+#include <stdint.h>
+#include <sys/stat.h>
 #endif
 
 #ifdef WIN32
@@ -37,15 +40,53 @@ extern void jv_tsd_dtoa_ctx_init();
 #define USE_ISATTY
 #endif
 
-#ifndef WIN32
+#if defined(USE_ISATTY) && !defined(WIN32)
+static volatile sig_atomic_t terminal_color_fd = -1;
+
+static void close_terminal_color_fd(void) {
+  int fd = terminal_color_fd;
+  terminal_color_fd = -1;
+  if (fd >= 0)
+    close(fd);
+}
+
 static void reset_terminal_color(int signo) {
   // Only async-signal-safe functions may run here. SA_RESETHAND restores the
   // default disposition before the signal is raised again.
-  (void)write(STDOUT_FILENO, "\033[0m", 4);
+  if (terminal_color_fd >= 0)
+    (void)write(terminal_color_fd, "\033[0m", 4);
   raise(signo);
 }
 
 static void install_terminal_color_handlers(void) {
+  struct stat output, reset;
+  const char *name = ttyname(STDOUT_FILENO);
+  if (name == NULL || fstat(STDOUT_FILENO, &output) != 0)
+    return;
+  // A new open file description keeps O_NONBLOCK private to the reset writer.
+  // In particular, do not change stdout's flags, which may be shared by a shell.
+  int fd = open(name, O_WRONLY | O_NONBLOCK | O_NOCTTY);
+  if (fd < 0)
+    return;
+  if (fd <= STDERR_FILENO) {
+    int private_fd = fcntl(fd, F_DUPFD, STDERR_FILENO + 1);
+    close(fd);
+    fd = private_fd;
+    if (fd < 0)
+      return;
+  }
+  if (fd > SIG_ATOMIC_MAX || fstat(fd, &reset) != 0 ||
+      !S_ISCHR(reset.st_mode) || output.st_dev != reset.st_dev ||
+      output.st_ino != reset.st_ino || output.st_rdev != reset.st_rdev ||
+      fcntl(fd, F_SETFD, FD_CLOEXEC) == -1) {
+    close(fd);
+    return;
+  }
+  terminal_color_fd = fd;
+  if (atexit(close_terminal_color_fd) != 0) {
+    close_terminal_color_fd();
+    return;
+  }
   const int signals[] = {SIGINT, SIGTERM, SIGHUP};
   struct sigaction action, previous;
   memset(&action, 0, sizeof(action));
@@ -594,7 +635,7 @@ int main(int argc, char* argv[]) {
   if (options & ASCII_OUTPUT) dumpopts |= JV_PRINT_ASCII;
   if (options & COLOR_OUTPUT) dumpopts |= JV_PRINT_COLOR;
   if (options & NO_COLOR_OUTPUT) dumpopts &= ~JV_PRINT_COLOR;
-#ifndef WIN32
+#if defined(USE_ISATTY) && !defined(WIN32)
   if ((dumpopts & (JV_PRINT_ISATTY | JV_PRINT_COLOR)) ==
       (JV_PRINT_ISATTY | JV_PRINT_COLOR))
     install_terminal_color_handlers();

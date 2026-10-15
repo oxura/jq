@@ -171,9 +171,12 @@ sections:
         a pipe or a file using `-C`, and disable color with `-M`.
         When the `NO_COLOR` environment variable is not empty, jq disables
         colored output by default, but you can enable it by `-C`.
-        On Unix terminals, jq resets the color before terminating on
-        `SIGINT`, `SIGTERM`, or `SIGHUP`; inherited ignored signals remain
-        ignored.
+        On Unix terminals, jq makes a best-effort, nonblocking attempt to
+        reset the color before terminating on `SIGINT`, `SIGTERM`, or
+        `SIGHUP`. The reset may be omitted if the terminal's output buffer
+        is full or a separate reset descriptor for the output terminal
+        is unavailable.
+        Inherited ignored signals remain ignored.
 
         Colors can be configured with the `JQ_COLORS` environment
         variable (see below).
