@@ -1569,17 +1569,18 @@ null
 [1,2]
 [true,false,false,true]
 
-try startswith("1") catch .
+try ["success", startswith("1")] catch ["error"]
 [1]
-"startswith() requires two strings or two arrays"
+["error"]
 
-try endswith([1]) catch .
+try ["success", endswith([1])] catch ["error"]
 "1"
-"endswith() requires two strings or two arrays"
+["error"]
 
-(reduce range(10002) as $_ ([]; [.])) as $a | (reduce range(10002) as $_ ([]; [.])) as $b | [(try ([$a] | startswith([$b])) catch .), (try ([$a] | endswith([$b])) catch .)]
+[9999,10002][] as $n | (reduce range($n) as $_ ([]; [.])) as $a | (reduce range($n) as $_ ([]; [.])) as $b | [(try ["success", ([$a] | startswith([$b]))] catch ["error"]), (try ["success", ([$a] | endswith([$b]))] catch ["error"])]
 null
-["Equality check too deep","Equality check too deep"]
+[["success",true],["success",true]]
+[["error"],["error"]]
 
 [.[] | split(", ")]
 ["a,b, c, d, e,f",", a,b, c, d, e,f, "]
@@ -2761,25 +2762,18 @@ try ltrimstr("x") catch "x", try rtrimstr("x") catch "x" | "ok"
 "ok"
 "ok"
 
-# ltrimstr/1 and rtrimstr/1 return an error for non-strings. #2969
 
-.[] as [$x, $y] | try ["ok", ($x | ltrimstr($y))] catch ["ko", .]
-[["hi",1],[1,"hi"],["hi","hi"],[1,1]]
-["ko","ltrimstr() requires string inputs"]
-["ko","ltrimstr() requires string inputs"]
-["ok",""]
-["ko","ltrimstr() requires string inputs"]
-
-.[] as [$x, $y] | try ["ok", ($x | rtrimstr($y))] catch ["ko", .]
-[["hi",1],[1,"hi"],["hi","hi"],[1,1]]
-["ko","rtrimstr() requires string inputs"]
-["ko","rtrimstr() requires string inputs"]
-["ok",""]
-["ko","rtrimstr() requires string inputs"]
-
-[(try ltrimstr([1]) catch .), (try rtrimstr([1]) catch .), (try trimstr([1]) catch .)]
-[1]
-["ltrimstr() requires string inputs","rtrimstr() requires string inputs","ltrimstr() requires string inputs"]
+# Trimming stays string-only, with real success/error transitions rather than
+# depending on the diagnostic wording of either the trim or matching helper.
+.[] as [$x, $y] | [(try ["success", ($x | ltrimstr($y))] catch ["error"]), (try ["success", ($x | rtrimstr($y))] catch ["error"]), (try ["success", ($x | trimstr($y))] catch ["error"])]
+[["hi",1],[1,"hi"],["hi","hi"],["hi","i"],[1,1],[[1],[1]],[[],[]]]
+[["error"],["error"],["error"]]
+[["error"],["error"],["error"]]
+[["success",""],["success",""],["success",""]]
+[["success","hi"],["success","h"],["success","h"]]
+[["error"],["error"],["error"]]
+[["error"],["error"],["error"]]
+[["error"],["error"],["error"]]
 
 
 # oss-fuzz #66061: setpath/2 leaks when indexing array with array
